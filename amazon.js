@@ -1,5 +1,6 @@
 const { log } = require("console");
 const { link } = require("fs");
+const { resolve } = require("path");
 const puppeteer=require("puppeteer");
 const {email,password}=require("./secrets");
 
@@ -103,18 +104,22 @@ browserOpenPromise
     })
     .then(function(phonesLinkArr){
         console.log(phonesLinkArr);
-        let fullLink="https://www.amazon.com"+phonesLinkArr[0];
-        let visitPhonesPromise=cTab.goto(fullLink);
+        let visitPhonesPromise=phoneClick(phonesLinkArr[0],1);
+        for(let i=1;i<phonesLinkArr.length;i++){
+            visitPhonesPromise=visitPhonesPromise.then(function(){
+                return phoneClick(phonesLinkArr[i],i+1);
+            })
+        }
         return visitPhonesPromise;
     })
-    .then(function(){
-        console.log("First phone clicked");
-        let clickFirstPhonePromise=waitAndClick('input[id="add-to-cart-button"]');
-        return clickFirstPhonePromise;
-    })
-    .then(function(){
-        console.log("First phone clicked");
-    })
+    // .then(function(){
+    //     console.log("First phone clicked");
+    //     let clickFirstPhonePromise=waitAndClick('input[id="add-to-cart-button"]');
+    //     return clickFirstPhonePromise;
+    // })
+    // .then(function(){
+    //     console.log("First phone clicked");
+    // })
 
     function waitAndClick(selector){
         let myPromise=new Promise(function(resolve,reject){
@@ -154,3 +159,33 @@ function waitAndType(selector,type){
 
     return myPromise;
 }    
+
+
+function phoneClick(link,num){
+    let myPromise=new Promise(function(resolve,reject){
+        let fullLink="https://www.amazon.com"+link;
+        let clickPhonePromise=cTab.goto(fullLink);
+        clickPhonePromise
+            .then(function(){
+                let addToCartPromise=waitAndClick('input[id="add-to-cart-button"]');
+                return addToCartPromise;
+            })
+            .then(function(){
+                let wait5Secpromise=cTab.waitForTimeout(5000);
+                return wait5Secpromise;
+            })
+            .then(function(){
+                console.log(num+" Product added to cart");
+                let clickCartButton=waitAndClick('span[id="attach-sidesheet-view-cart-button"]')
+                return clickCartButton;
+            })
+            .then(function(){
+                resolve();
+            })
+            .catch(function(err){
+                reject(err);
+            })
+    })
+
+    return myPromise;
+}
