@@ -1,3 +1,5 @@
+const { log } = require("console");
+const { link } = require("fs");
 const puppeteer=require("puppeteer");
 const {email,password}=require("./secrets");
 
@@ -81,6 +83,37 @@ browserOpenPromise
     })
     .then(function(){
         console.log("OnePlus product visited");
+        let wait4SecProimse=cTab.waitForTimeout(4000);
+        return wait4SecProimse;
+    })
+    .then(function(){
+        console.log("Wait for 4 second done");
+        function getAllPhonesLink(){
+            let phonesLinkArr=[];
+            let links=document.querySelectorAll('a[class="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal"]',{delay:100});
+            for(let i=0;i<links.length;i++){
+                phonesLinkArr.push(links[i].getAttribute('href'));
+            }
+
+            return phonesLinkArr;
+        }
+
+        let phonesLinkPromise=cTab.evaluate(getAllPhonesLink);
+        return phonesLinkPromise;
+    })
+    .then(function(phonesLinkArr){
+        console.log(phonesLinkArr);
+        let fullLink="https://www.amazon.com"+phonesLinkArr[0];
+        let visitPhonesPromise=cTab.goto(fullLink);
+        return visitPhonesPromise;
+    })
+    .then(function(){
+        console.log("First phone clicked");
+        let clickFirstPhonePromise=waitAndClick('input[id="add-to-cart-button"]');
+        return clickFirstPhonePromise;
+    })
+    .then(function(){
+        console.log("First phone clicked");
     })
 
     function waitAndClick(selector){
